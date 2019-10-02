@@ -1,2 +1,2 @@
 # Magic_Scripts
-Contains Compilation warning analyser and SA warning Analyzer Tools
+Contains Compilation Warning Analyser and SA Warning Analyzer Tools
