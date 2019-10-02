@@ -1,0 +1,52 @@
+#!/usr/bin/python
+""""
+Author:
+    Umang Agrawal (umagrawa@cisco.com)
+Description:
+    
+"""
+#Importing Required Packages
+import os,shutil,glob,io,time
+from collections import defaultdict
+import sys
+import pandas as pd
+
+if 'report1.csv' in os.listdir():
+    os.remove('report1.csv')
+
+data = []
+for file in glob.glob('*'):
+    if file not in ['analyzer1', 'analyzer2', 'report1.csv', 'report2.csv']:
+        error= True
+        f = io.open(file, 'r', encoding='windows-1252')
+        flag = -1
+        for line in f:
+            if 'warnings:' in line and flag == -1:
+                flag = 0
+                error = False
+                active = int(line.partition(':')[2].strip())
+            elif 'warnings:' in line and flag == 0:
+                flag = 1
+                noise= int(line.partition(':')[2].strip())
+            elif 'warnings:' in line and flag == 1:
+                flag = 2
+                parent = int(line.partition(':')[2].strip())
+            elif 'Static analysis warnings can be viewed at' in line:
+                coverity_link = line.partition(':')[2]
+            
+        if error:
+            data.append((file.replace('_','/'), 'Coverity not working ', ' ', ' ', 'link not found'))
+        else:
+            data.append((file.replace('_','/'), active, noise, parent, coverity_link))
+        f.close()
+
+df = pd.DataFrame(data, columns = ['Component', 'Active', 'Noise', 'Parent', 'Coverity-link'])
+with open('report1.csv', 'a') as report:
+    df.to_csv(report)
+
+print('********** SA Warnings Analysis Report **********')
+print('Module' + ' '*(50-len('Module')) + '  ' + 'Active' + '  ' +  'Noise' + '  ' +  'Parent' )
+for i in data:
+    print(i[0] + '-'*(50-len(i[0])) + '     ' + str(i[1]) + '     ' +  str(i[2]) + '     ' + str(i[3]) )
+for i in data:
+    print('\nStatic analysis warnings coverity web-link for {0} can be viewed at :\n {1}\n'.format(i[0], i[4]))
