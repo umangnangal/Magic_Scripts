@@ -104,7 +104,7 @@ def sa_warning_analysis(file):
             final_report.append((div, div_count))
     print('\n********** ' + file + ' **********')
     final_report.sort(key = lambda x:x[1], reverse = True)
-    df = pd.DataFrame(final_report, columns = [str(file.replace('_','/')), ''])
+    df = pd.DataFrame(final_report, columns = [str(file.replace('.','/')), ''])
     with open('report2.csv', 'a') as report:
         df.to_csv(report)
     for item in final_report:

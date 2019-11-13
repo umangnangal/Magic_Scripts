@@ -265,7 +265,7 @@ def ccw_report():
         os.chdir('./' + dirName)
         for directory in glob.glob('*'):
             os.chdir('./' + directory)
-            warning_analyze_print(log_file)
+            warning_analyze_print(directory)
             os.chdir('./..')
     else:
         print('Wrong Arguments. Please see help.')

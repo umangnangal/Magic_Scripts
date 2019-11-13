@@ -12,11 +12,11 @@ from collections import defaultdict
 import sys
 
 def warning_analyze_print(name = ''):
-    print('Analyzing the warnings for {0}'.format(os.getcwd()))
+    print('Analyzing the warnings for {0}'.format(name))
     total_warnings = 0 
     final_report = []
     for file in glob.glob('*'):
-        #Getting labels for classifying the wwarnings
+        #Getting labels for classifying the warnings
         div_set = set()
         div_set.add('-Others')
         f = io.open(file, 'r', encoding='latin1')
@@ -289,7 +289,7 @@ def ccw_report():
         os.chdir('./' + dirName)
         for directory in glob.glob('*'):
             os.chdir('./' + directory)
-            warning_analyze_print(log_file)
+            warning_analyze_print(directory)
             os.chdir('./..')
     else:
         print('Wrong Arguments. Please see help.')

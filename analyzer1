@@ -35,9 +35,9 @@ for file in glob.glob('*'):
                 coverity_link = line.partition(':')[2]
             
         if error:
-            data.append((file.replace('_','/'), 'Coverity not working ', ' ', ' ', 'link not found'))
+            data.append((file.replace('.','/'), 'Coverity not working ', ' ', ' ', 'link not found'))
         else:
-            data.append((file.replace('_','/'), active, noise, parent, coverity_link))
+            data.append((file.replace('.','/'), active, noise, parent, coverity_link))
         f.close()
 
 df = pd.DataFrame(data, columns = ['Component', 'Active', 'Noise', 'Parent', 'Coverity-link'])
