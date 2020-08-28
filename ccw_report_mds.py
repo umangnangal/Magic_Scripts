@@ -141,27 +141,71 @@ def ccw_report():
         os.chdir('./build')
         print('Directory changed to {0}'.format(os.getcwd()))
 
-        print('\nEcecuting build for following modules:')
+        print('********************** Please run the required vbe 5.x.x.x **********************')
+        print('Ececuting build for following modules:')
         for module in module_list:
             print(module)
 
         #Executing the build commands to generate the compilation warnings log
-        #os.system('vbe 5.2.2')
         for module in module_list:
-            print('Deleting the existing build for module : {0}'.format(module))
-            cmd1 = 'gmake clean image_m9700_sf3ek9/x86n/gdb/{0}/sup3dc3mds &> /dev/null'.format(module)
-            print('Executing cli : {0}'.format(cmd1))
-            os.system(cmd1)
-            print('Starting build and saving the log for module : {0}'.format(module))
-            cmd2 = 'gmake image_m9700_sf3ek9/x86n/gdb/{0}/sup3dc3mds > ./../{1}/{2} 2>&1 < /dev/null'.format(module, dirName, module)
+            print('Getting the build targets for module : {0}'.format(module))
+            cmd_get_targets = 'ibuild -module {0} -show-only > tmp.txt'.format(module)
+            print('Executing cli : {0}'.format(cmd_get_targets))
+            os.system(cmd_get_targets)
+            targets = []
+            var = 0 ; bracket = 0
+            f = io.open('tmp.txt', 'r', encoding='latin1')
+            for line in f:
+                if '$VAR1' in line:
+                    var = 1
+                elif var == 1 and bracket == 0 and ']' not in line:
+                    targets.append( ''.join(x for x in list(line.strip()) if x not in [',', "'"]) )
+                elif var == 1 and ']' in line:
+                    bracket = 1
+                    break
+            f.close()
+            print('Cleaning all the targets...')
+            for target in targets:
+                cmd_clean = 'gmake clean {0} &> /dev/null'.format(target)
+                print('Executing cli : {0}'.format(cmd_clean))
+                os.system(cmd_clean)
+        
             start = time.time()
-            print('Executing cli : {0}\nIt will take around 5 minutes, please wait.....'.format(cmd2))
-            os.system(cmd2)
+            print('Starting build for module : {0}'.format(module))
+            cmd_ibuild = 'ibuild -module {0} > tmp.txt'.format(module)
+            print('Executing cli : {0}\nIt will take around 30 minutes, please wait.....'.format(cmd_ibuild))
+            os.system(cmd_ibuild)
+
+            tmp_logfiles = []
+            f = io.open('tmp.txt', 'r', encoding='latin1')
+            for line in f:
+                if 'The complete log can be accessed' in line:
+                    file_loc = line.partition('from')[2].strip()[:-1]
+                    tmp_logfiles.append(file_loc)
+            f.close()
             print('Module {0} build successfully'.format(module))
+
+            if os.path.exists("total_log"):
+                print("Deleting the existing logfile 'total_log' if present...")
+                os.remove("total_log")
+            else:
+                print("No existing 'total_log' file present. Creating a new file 'total_log'...")
+            with open('total_log','a') as file:
+                for tmp_logfile in tmp_logfiles:
+                    f = io.open(tmp_logfile, 'r', encoding='latin1')
+                    for line in f:
+                        file.write(line)
+                    print('Appending {0}'.format(tmp_logfile))
+                    f.close()
+
+            cmd_move_file = 'mv total_log ./../{0}/{1}'.format(dirName, module)
+            print('Executing cli : {0}'.format(cmd_move_file))
+            os.system(cmd_move_file)
+            
             end = time.time()
             print('TIme Elapsed : {0} minutes\n'.format( (end-start)//60 ) )
-        #Warning Analysis Report Generation
 
+        #Warning Analysis Report Generation
         os.chdir('./../' + dirName)
         print('Directory changed to {0}'.format(os.getcwd()))
         print('\n' + '*'*20 + 'COMPILATION WARNING ANALYSIS' + '*'*20 +' \n')

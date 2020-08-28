@@ -12,11 +12,11 @@ from collections import defaultdict
 import sys
 
 def warning_analyze_print(name = ''):
-    print('Analyzing the warnings for {0}'.format(os.getcwd()))
+    print('Analyzing the warnings for {0}'.format(name))
     total_warnings = 0 
     final_report = []
     for file in glob.glob('*'):
-        #Getting labels for classifying the wwarnings
+        #Getting labels for classifying the warnings
         div_set = set()
         div_set.add('-Others')
         f = io.open(file, 'r', encoding='latin1')
@@ -37,7 +37,7 @@ def warning_analyze_print(name = ''):
         count = 0
         for line in f:
             line = line.strip()
-            if 'warning' in line and '.mk' not in line and '.c' in line and '.cli' not in line:
+            if 'warning' in line and '.mk' not in line and '.c' in line and '.cli' not in line and '.cmd' not in line:
                 flag=0
                 for i in warning_count.keys():
                     if i in line:
@@ -74,7 +74,7 @@ def warning_analyze_print(name = ''):
         
         warning_count_list.sort(key = lambda x:x[1], reverse = True)
         for item in warning_count_list:
-            print( item[0] + '-'*(50-len(item[0])) + ' ' + str(item[1]) )
+            print( item[0] + '-'*(50-len(item[0])) + str(item[1]) )
         if len(others)>0:
             print('!!!Unclassified warnings are given below:')
             for i in range(len(others)):
@@ -84,7 +84,7 @@ def warning_analyze_print(name = ''):
     final_report.sort(key = lambda x:x[1], reverse = True)
     print("FINAL REPORT FOR COMPILATION WARNINGS :\n")
     for i in range(len(final_report)):
-        print(str(i+1)+ ') ' + final_report[i][0] + '-'*(60-len(final_report[i][0])-len(str(i+1))) + str(final_report[i][1]) + ' '*10 + final_report[i][2] )
+        print(str(i+1)+ ') ' + final_report[i][0] + ' ' + '-'*(60-len(final_report[i][0])-len(str(i+1))) + ' ' + str(final_report[i][1]) + '\t' + final_report[i][2] )
         total_warnings += final_report[i][1]
     print('\nTOTAL WARNINGS TO BE RESOLVED for {0} : {1}\n'.format(name, total_warnings))
 
@@ -146,26 +146,51 @@ def ccw_report():
         #Getting into the build directory
         os.chdir('./build')
         print('Directory changed to {0}'.format(os.getcwd()))
-
+        print('*** Make sure to run required vbe 5.x.x.x before using gmake ***')
         print('\nExecuting build for following modules:')
         for module in module_list:
             print(module)
 
         #Executing the build commands to generate the compilation warnings log
-        #os.system('vbe 5.2.2.1')
         for module in module_list:
-            print('Deleting the existing build for module : {0}'.format(module))
-            cmd1 = 'gmake clean ins/x86e/final/{0}/supe/ &> /dev/null'.format(module)
-            print('Executing cli : {0}'.format(cmd1))
-            os.system(cmd1)
-            print('Starting build and saving the log for module : {0}'.format(module))
-            cmd2 = './InsBuild -module {0} -image nxos -bldtype final > ./../{1}/{2} 2>&1 < /dev/null'.format(module, dirName, module)
+            print('\nGetting the build targets for module : {0}'.format(module))
+            cmd_get_targets = './InsBuild -module {0} -bldtype final -image nxos -show_only > tmp.txt 2>&1 < /dev/null'.format(module)
+            print('Executing cli : {0}'.format(cmd_get_targets))
+            os.system(cmd_get_targets)
+            targets = []
+            var = 0 ; bracket = 0
+            f = io.open('tmp.txt', 'r', encoding='latin1')
+            for line in f:
+                if '$VAR1' in line:
+                    var = 1
+                elif var == 1 and bracket == 0 and ']' not in line:
+                    targets.append( ''.join(x for x in list(line.strip()) if x not in [',', "'"]) )
+                elif var == 1 and ']' in line:
+                    bracket = 1
+                    break
+            f.close()
+            if len(targets):
+                print('Targets found for {0}:'.format(module))
+                for target in targets:
+                    print(target)
+            else:
+                print('No targets found for {0}. Please check the module name.'.format(module))
+            
+            print('\n*** Cleaning all the targets... ***')
+            for target in targets:
+                cmd_clean = 'gmake clean {0} &> /dev/null'.format(target)
+                print('Executing cli : {0}'.format(cmd_clean))
+                os.system(cmd_clean)
+
+            print('\n*** Building all the targets... ***')
             start = time.time()
-            print('Executing cli : {0}\nIt will take around 5 minutes, please wait.....'.format(cmd2))
-            os.system(cmd2)
-            print('Module {0} build successfully'.format(module))
+            print('Starting build for module : {0}'.format(module))
+            cmd_insbuild = './InsBuild -module {0} -bldtype final -image nxos > ./../{1}/{2} 2>&1 < /dev/null'.format(module, dirName, module)
+            print('Executing cli : {0}\nIt will take around 30 minutes, please wait.....'.format(cmd_insbuild))
+            os.system(cmd_insbuild)
             end = time.time()
             print('TIme Elapsed : {0} minutes\n'.format( (end-start)//60 ) )
+            
         #Warning Analysis Report Generation
 
         os.chdir('./../' + dirName)
