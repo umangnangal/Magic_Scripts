@@ -130,7 +130,7 @@ def ccw_report():
             print('Wrong Arguments')
             raise ValueError('See help')
         
-        dirName = 'compilation_warnings'
+        dirName = 'compilation_errors'
         os.chdir('./..')
         print('Directory changed to {0}'.format(os.getcwd()))
         #Creating a directory for storing the build logs for each module
